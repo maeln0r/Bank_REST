@@ -1,0 +1,24 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1756918011-1
+      author: maeln0r
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: postgresql
+        - not:
+            sqlCheck:
+              expectedResult: 1
+              sql: "SELECT COUNT(1) FROM users WHERE username = '${admin_username}'"
+      changes:
+        - sql: |
+            CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+            WITH u AS (
+              INSERT INTO users (id, created_at, username, email, password_hash, enabled)
+              VALUES (gen_random_uuid(), now(), '${admin_username}', lower('${admin_email}'), '${admin_password_hash}', true)
+              RETURNING id
+            )
+            INSERT INTO user_roles(user_id, role)
+            SELECT id, 'ROLE_ADMIN' FROM u
+            ON CONFLICT DO NOTHING;

@@ -1,0 +1,49 @@
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:${JDBC_URL:jdbc:postgresql://localhost:5432/bankRest}}
+    username: ${SPRING_DATASOURCE_USERNAME:${DB_USER:user}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD:password}}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    generate-ddl: true
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+    parameters:
+      admin_username: ${ADMIN_USERNAME:admin}
+      admin_email: ${ADMIN_EMAIL:admin@example.com}
+      admin_password_hash: ${ADMIN_PASSWORD_HASH:}
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+
+server:
+  port: 8080
+  error:
+    include-stacktrace: always
+    include-exception: true
+    include-message: always
+
+logging:
+  level:
+    root: INFO
+    liquibase: DEBUG
+    liquibase.changelog: TRACE
+    liquibase.lockservice: TRACE
+    org.springframework.boot.autoconfigure.liquibase: DEBUG
+
+app:
+  jwt:
+    # Base64-encoded secret (пример: openssl rand -base64 32)
+    secret-base64: ${JWT_SECRET_B64:Tv2wDOQFvf2b5/Fs1qnE53xO+qW1lXMcE8GZCEX/K7M=}
+    access-minutes: ${JWT_ACCESS_MIN:30}
+    refresh-days: ${JWT_REFRESH_DAYS:30}

@@ -1,0 +1,73 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1756909361-1
+      author: maeln0r
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: postgresql
+      changes:
+        - sql: "CREATE EXTENSION IF NOT EXISTS pgcrypto;"
+        - createTable:
+            tableName: users
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints: {primaryKey: true, primaryKeyName: pk_users}
+                  defaultValueComputed: gen_random_uuid()
+              - column: {name: username, type: VARCHAR(100), constraints: {nullable: false, unique: true}}
+              - column: {name: email, type: VARCHAR(255), constraints: {nullable: false, unique: true}}
+              - column: {name: password_hash, type: VARCHAR(255), constraints: {nullable: false}}
+              - column: {name: enabled, type: BOOLEAN, defaultValueBoolean: true, constraints: {nullable: false}}
+              - column: {name: created_at, type: TIMESTAMP WITH TIME ZONE, defaultValueComputed: CURRENT_TIMESTAMP}
+        - createTable:
+            tableName: user_roles
+            columns:
+              - column: {name: user_id, type: UUID, constraints: {nullable: false}}
+              - column: {name: role, type: VARCHAR(50), constraints: {nullable: false}}
+        - addPrimaryKey:
+            tableName: user_roles
+            columnNames: user_id, role
+            constraintName: pk_user_roles
+        - addForeignKeyConstraint:
+            baseTableName: user_roles
+            baseColumnNames: user_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_user_roles_user
+            onDelete: CASCADE
+        - createIndex:
+            tableName: user_roles
+            indexName: idx_user_roles_user
+            columns:
+              - column: {name: user_id}
+        - createTable:
+            tableName: refresh_tokens
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints: { primaryKey: true, primaryKeyName: pk_refresh_tokens }
+                  defaultValueComputed: gen_random_uuid()
+              - column: {name: token, type: VARCHAR(512), constraints: {nullable: false}}
+              - column: {name: user_id, type: UUID, constraints: {nullable: false}}
+              - column: {name: expires_at, type: TIMESTAMP WITH TIME ZONE, constraints: {nullable: false}}
+              - column: {name: revoked, type: BOOLEAN, defaultValueBoolean: false, constraints: {nullable: false}}
+              - column: {name: created_at, type: TIMESTAMP WITH TIME ZONE, defaultValueComputed: CURRENT_TIMESTAMP}
+        - addUniqueConstraint:
+            tableName: refresh_tokens
+            columnNames: token
+            constraintName: uq_refresh_token
+        - addForeignKeyConstraint:
+            baseTableName: refresh_tokens
+            baseColumnNames: user_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_refresh_token_user
+            onDelete: CASCADE
+        - createIndex:
+            tableName: refresh_tokens
+            indexName: idx_refresh_token_user
+            columns:
+              - column: {name: user_id}

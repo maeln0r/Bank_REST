@@ -1,0 +1,10 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1756917997-1
+      author: maeln0r
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: postgresql
+      changes:
+        - sql: "CREATE UNIQUE INDEX IF NOT EXISTS uq_users_email_lower ON users (lower(email));"
