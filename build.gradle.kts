@@ -26,8 +26,8 @@ dependencies {
 
 
     // DB & migrations
-    implementation("org.liquibase:liquibase-core")
-    runtimeOnly("org.postgresql:postgresql")
+    implementation("org.liquibase:liquibase-core:4.33.0")
+    runtimeOnly("org.postgresql:postgresql:42.7.7")
     implementation("org.mapstruct:mapstruct:1.6.3")
 
 

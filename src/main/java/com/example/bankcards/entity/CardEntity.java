@@ -7,22 +7,18 @@ import org.hibernate.annotations.UuidGenerator;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.type.SqlTypes;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
-import java.util.HashSet;
 import java.util.Objects;
-import java.util.Set;
 import java.util.UUID;
 
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
+@Getter @Setter
+@NoArgsConstructor @AllArgsConstructor
 @Builder
-@ToString(exclude = "roles")
+@ToString(exclude = "owner")
 @Entity
-@Table(name = "users")
-public class UserEntity {
-
+@Table(name = "cards")
+public class CardEntity {
     @Id
     @GeneratedValue
     @UuidGenerator
@@ -31,29 +27,29 @@ public class UserEntity {
     @Column(columnDefinition = "UUID")
     private UUID id;
 
-    @Column(nullable = false, unique = true, length = 100)
-    private String username;
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_id")
+    private UserEntity owner;
 
-    @Column(nullable = false, unique = true, length = 255)
-    private String email;
+    @Column(length = 4, nullable = false)
+    private String last4;
 
-    @Column(name = "password_hash", nullable = false, length = 255)
-    private String passwordHash;
-
-    @Builder.Default
-    @Column(nullable = false)
-    private boolean enabled = true;
-
-    @Builder.Default
-    @Column(nullable = false)
-    private OffsetDateTime createdAt = OffsetDateTime.now();
-
-    @Builder.Default
-    @ElementCollection(targetClass = RoleType.class, fetch = FetchType.EAGER)
-    @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
     @Enumerated(EnumType.STRING)
-    @Column(name = "role", nullable = false, length = 50)
-    private Set<RoleType> roles = new HashSet<>();
+    @Column(length = 20, nullable = false)
+    private CardStatus status;
+
+    @Column(name = "exp_month", nullable = false)
+    private int expMonth;
+
+    @Column(name = "exp_year", nullable = false)
+    private int expYear;
+
+    @Column(nullable = false, precision = 19, scale = 2)
+    private BigDecimal balance;
+
+    @Builder.Default
+    @Column(name = "created_at", nullable = false)
+    private OffsetDateTime createdAt = OffsetDateTime.now();
 
     @Override
     public final boolean equals(Object o) {
@@ -62,7 +58,7 @@ public class UserEntity {
         Class<?> oEffectiveClass = o instanceof HibernateProxy proxy ? proxy.getHibernateLazyInitializer().getPersistentClass() : o.getClass();
         Class<?> thisEffectiveClass = this instanceof HibernateProxy proxy ? proxy.getHibernateLazyInitializer().getPersistentClass() : this.getClass();
         if (thisEffectiveClass != oEffectiveClass) return false;
-        UserEntity that = (UserEntity) o;
+        CardEntity that = (CardEntity) o;
         return getId() != null && Objects.equals(getId(), that.getId());
     }
 

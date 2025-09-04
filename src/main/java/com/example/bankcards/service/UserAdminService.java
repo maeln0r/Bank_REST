@@ -6,6 +6,7 @@ import com.example.bankcards.dto.admin.UserAdminDtos.UserResponse;
 import com.example.bankcards.entity.RoleType;
 import com.example.bankcards.entity.UserEntity;
 import com.example.bankcards.repository.JpaUserRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -19,16 +20,12 @@ import java.util.UUID;
 
 @Service
 @Transactional(readOnly = true)
+@RequiredArgsConstructor
 public class UserAdminService {
     private final JpaUserRepository users;
     private final PasswordEncoder encoder;
 
-    public UserAdminService(JpaUserRepository users, PasswordEncoder encoder) {
-        this.users = users;
-        this.encoder = encoder;
-    }
-
-    public Page<UserResponse> list(Pageable pageable) {
+    public Page<UserResponse> list(Pageable pageable, String query) {
         return users.findAll(pageable).map(this::toDto);
     }
 
@@ -43,13 +40,15 @@ public class UserAdminService {
             throw new IllegalArgumentException("Имя пользователя %s уже используется".formatted(req.username()));
         if (users.existsByEmail(email))
             throw new IllegalArgumentException("Email пользователя %s уже используется".formatted(email));
-        UserEntity u = new UserEntity();
-        u.setUsername(req.username());
-        u.setEmail(email);
-        u.setPasswordHash(encoder.encode(req.password()));
-        u.setEnabled(Boolean.TRUE.equals(req.enabled()));
-        Set<RoleType> roles = (req.roles() == null || req.roles().isEmpty()) ? Set.of(RoleType.ROLE_USER) : req.roles();
-        u.setRoles(roles);
+
+        UserEntity u = UserEntity.builder()
+                .username(req.username())
+                .email(email)
+                .passwordHash(encoder.encode(req.password()))
+                .enabled(Boolean.TRUE.equals(req.enabled()))
+                .roles(req.roles() == null || req.roles().isEmpty() ? Set.of(RoleType.ROLE_USER) : req.roles())
+                .build();
+
         users.save(u);
         return toDto(u);
     }
@@ -57,6 +56,7 @@ public class UserAdminService {
     @Transactional
     public UserResponse update(UUID id, UpdateUserRequest req) {
         UserEntity u = require(id);
+
         if (req.username() != null && !Objects.equals(req.username(), u.getUsername())) {
             if (users.existsByUsername(req.username()))
                 throw new IllegalArgumentException("Имя пользователя %s уже используется".formatted(req.username()));
@@ -70,6 +70,7 @@ public class UserAdminService {
         }
         if (req.enabled() != null) u.setEnabled(req.enabled());
         if (req.roles() != null && !req.roles().isEmpty()) u.setRoles(req.roles());
+
         return toDto(u);
     }
 
@@ -85,7 +86,8 @@ public class UserAdminService {
     }
 
     private UserEntity require(UUID id) {
-        return users.findById(id).orElseThrow(() -> new IllegalArgumentException("Пользователь %s не найден".formatted(id)));
+        return users.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Пользователь %s не найден".formatted(id)));
     }
 
     private UserResponse toDto(UserEntity u) {

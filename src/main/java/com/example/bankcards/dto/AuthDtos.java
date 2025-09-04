@@ -5,14 +5,11 @@ import jakarta.validation.constraints.NotBlank;
 
 
 public class AuthDtos {
-
-
     public record LoginRequest(
             @NotBlank String usernameOrEmail,
             @NotBlank String password
     ) {
     }
-
 
     public record TokenResponse(
             String accessToken,
@@ -21,7 +18,6 @@ public class AuthDtos {
             long expiresInSeconds
     ) {
     }
-
 
     public record RefreshRequest(@NotBlank String refreshToken) {
     }

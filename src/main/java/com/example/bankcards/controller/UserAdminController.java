@@ -1,11 +1,9 @@
 package com.example.bankcards.controller;
 
-import com.example.bankcards.dto.admin.UserAdminDtos.ChangePasswordRequest;
-import com.example.bankcards.dto.admin.UserAdminDtos.CreateUserRequest;
-import com.example.bankcards.dto.admin.UserAdminDtos.UpdateUserRequest;
-import com.example.bankcards.dto.admin.UserAdminDtos.UserResponse;
+import com.example.bankcards.dto.admin.UserAdminDtos.*;
 import com.example.bankcards.service.UserAdminService;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -18,14 +16,16 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/admin/users")
 @PreAuthorize("hasRole('ADMIN')")
-public class AdminUserController {
+@RequiredArgsConstructor
+public class UserAdminController {
     private final UserAdminService service;
 
-    public AdminUserController(UserAdminService service) { this.service = service; }
-
     @GetMapping
-    public ResponseEntity<Page<UserResponse>> list(Pageable pageable) {
-        return ResponseEntity.ok(service.list(pageable));
+    public ResponseEntity<Page<UserResponse>> list(
+            @org.springframework.data.web.PageableDefault(sort = "createdAt", direction = org.springframework.data.domain.Sort.Direction.DESC) Pageable pageable,
+            @RequestParam(value = "query", required = false) String query
+    ) {
+        return ResponseEntity.ok(service.list(pageable, query));
     }
 
     @GetMapping("/{id}")
@@ -44,7 +44,7 @@ public class AdminUserController {
     }
 
     @PostMapping("/{id}/password")
-    public ResponseEntity<Void> changePassword(@PathVariable UUID id, @Valid @RequestBody ChangePasswordRequest req) {
+    public ResponseEntity<Void> changePassword(@PathVariable UUID id, @Valid @RequestBody AdminChangePasswordRequest req) {
         service.changePassword(id, req.newPassword());
         return ResponseEntity.noContent().build();
     }

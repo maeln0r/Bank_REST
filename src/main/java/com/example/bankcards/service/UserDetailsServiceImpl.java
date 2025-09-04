@@ -1,8 +1,9 @@
 package com.example.bankcards.service;
 
-
 import com.example.bankcards.entity.UserEntity;
 import com.example.bankcards.repository.JpaUserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -10,29 +11,26 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import java.util.Set;
 import java.util.stream.Collectors;
 
-
 @Service
+@RequiredArgsConstructor
 public class UserDetailsServiceImpl implements UserDetailsService {
     private final JpaUserRepository users;
 
-
-    public UserDetailsServiceImpl(JpaUserRepository users) {
-        this.users = users;
-    }
-
-
     @Override
-    public UserDetails loadUserByUsername(String usernameOrEmail) throws UsernameNotFoundException {
-        UserEntity u = users.findByUsername(usernameOrEmail)
-                .or(() -> users.findByEmail(usernameOrEmail))
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-        return new User(
-                u.getUsername(),
-                u.getPasswordHash(),
-                u.isEnabled(), true, true, true,
-                u.getRoles().stream().map(r -> new SimpleGrantedAuthority(r.name())).collect(Collectors.toSet())
-        );
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        UserEntity u = users.findByUsername(username)
+                .or(() -> users.findByEmail(username))
+                .orElseThrow(() -> new UsernameNotFoundException("Пользователь %s не найден".formatted(username)));
+        Set<GrantedAuthority> authorities = u.getRoles().stream()
+                .map(r -> new SimpleGrantedAuthority(r.name()))
+                .collect(Collectors.toSet());
+        return User.withUsername(u.getUsername())
+                .password(u.getPasswordHash())
+                .authorities(authorities)
+                .disabled(!u.isEnabled())
+                .build();
     }
 }

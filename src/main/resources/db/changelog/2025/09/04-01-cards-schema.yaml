@@ -1,0 +1,84 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1756988237-1
+      author: maeln0r
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: postgresql
+        - tableExists:
+            tableName: users
+      changes:
+        - createTable:
+            tableName: cards
+            remarks: "User cards; PAN не храним — только last4"
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: owner_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: last4
+                  type: VARCHAR(4)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: exp_month
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: exp_year
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: balance
+                  type: NUMERIC(19,2)
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: cards
+            baseColumnNames: owner_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_cards_owner
+            onDelete: RESTRICT
+            onUpdate: RESTRICT
+        - createIndex:
+            tableName: cards
+            indexName: idx_cards_owner
+            columns:
+              - column:
+                  name: owner_id
+        - createIndex:
+            tableName: cards
+            indexName: idx_cards_status
+            columns:
+              - column:
+                  name: status
+        - createIndex:
+            tableName: cards
+            indexName: idx_cards_created
+            columns:
+              - column:
+                  name: created_at
