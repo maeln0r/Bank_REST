@@ -6,8 +6,11 @@ import com.example.bankcards.exception.DomainValidationException;
 import com.example.bankcards.exception.NotFoundException;
 import com.example.bankcards.mapper.UserMapper;
 import com.example.bankcards.repository.JpaUserRepository;
+import com.example.bankcards.repository.spec.UserSpecifications;
+import com.example.bankcards.util.PageableUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,14 +31,10 @@ public class UserAdminService {
         this.mapper = mapper;
     }
 
-    public Page<UserAdminDtos.UserResponse> list(String query, Pageable pageable) {
-        if (query == null || query.isBlank()) {
-            return users.findAll(pageable).map(mapper::toUserResponse);
-        }
-        String q = query.trim();
-        return users
-                .findByUsernameContainingIgnoreCaseOrEmailContainingIgnoreCase(q, q, pageable)
-                .map(mapper::toUserResponse);
+    public Page<UserAdminDtos.UserResponse> list(Pageable pageable, String query) {
+        var pg = PageableUtils.withDefaultSort(pageable, Sort.by(Sort.Direction.DESC, "createdAt"));
+        var spec = UserSpecifications.matchesQuery(query);
+        return users.findAll(spec, pg).map(mapper::toUserResponse);
     }
 
     public UserAdminDtos.UserResponse get(UUID id) {

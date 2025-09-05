@@ -1,6 +1,7 @@
 package com.example.bankcards.dto.card;
 
 import com.example.bankcards.entity.CardStatus;
+
 import java.math.BigDecimal;
 import java.util.UUID;
 
@@ -12,4 +13,5 @@ public record CardResponse(
         int expYear,
         BigDecimal balance,
         String maskedNumber
-) {}
+) {
+}

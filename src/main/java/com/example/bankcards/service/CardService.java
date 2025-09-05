@@ -23,4 +23,6 @@ public interface CardService {
     Page<CardResponse> listForOwner(CardFilter filter, Pageable pageable, UUID ownerId);
 
     void transferBetweenOwnCards(UUID currentUserId, UUID fromId, UUID toId, BigDecimal amount);
+
+    void requestBlock(UUID currentUserId, UUID cardId);
 }

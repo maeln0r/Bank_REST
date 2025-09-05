@@ -12,8 +12,10 @@ import java.time.OffsetDateTime;
 import java.util.Objects;
 import java.util.UUID;
 
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 @ToString(exclude = "owner")
 @Entity
@@ -44,7 +46,7 @@ public class CardEntity {
     @Column(name = "exp_year", nullable = false)
     private int expYear;
 
-    @Column(nullable = false, precision = 19, scale = 2)
+    @Column(name = "balance", precision = 19, scale = 2, nullable = false)
     private BigDecimal balance;
 
     @Builder.Default

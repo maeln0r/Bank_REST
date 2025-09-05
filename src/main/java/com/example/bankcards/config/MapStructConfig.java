@@ -13,4 +13,5 @@ import org.mapstruct.ReportingPolicy;
         nullValueCheckStrategy = NullValueCheckStrategy.ALWAYS,
         nullValueMappingStrategy = NullValueMappingStrategy.RETURN_NULL
 )
-public interface MapStructConfig { }
+public interface MapStructConfig {
+}

@@ -26,7 +26,7 @@ springdoc:
     enabled: true
 
 server:
-  port: 8080
+  port: ${APP_PORT:8080}
   error:
     include-stacktrace: always
     include-exception: true
@@ -46,3 +46,8 @@ app:
     secret-base64: ${JWT_SECRET_B64:Tv2wDOQFvf2b5/Fs1qnE53xO+qW1lXMcE8GZCEX/K7M=}
     access-minutes: ${JWT_ACCESS_MIN:30}
     refresh-days: ${JWT_REFRESH_DAYS:30}
+  money:
+    scale: ${MONEY_SCALE:2}
+    roundingMode: ${MONEY_ROUND_MODE:HALF_UP}
+    maxAmount: ${MONEY_MAX_AMOUNT:1000000000000.00}
+    maxBalance: ${MONEY_MAX_BALANCE:1000000000000.00}

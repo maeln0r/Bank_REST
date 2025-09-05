@@ -84,4 +84,11 @@ public class CardController {
     public void transfer(@Valid @RequestBody TransferRequest req) {
         service.transferBetweenOwnCards(currentUser.getCurrentUserId(), req.fromCardId(), req.toCardId(), req.amount());
     }
+
+    @PostMapping("/{id}/block-request")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasRole('USER')")
+    public void requestBlock(@PathVariable UUID id) {
+        service.requestBlock(currentUser.getCurrentUserId(), id);
+    }
 }

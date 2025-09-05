@@ -1,4 +1,4 @@
-package com.example.bankcards.service;
+package com.example.bankcards.service.scheduler;
 
 import com.example.bankcards.repository.JpaRefreshTokenRepository;
 import lombok.RequiredArgsConstructor;

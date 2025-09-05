@@ -17,7 +17,7 @@ public interface CardMapper {
     @Mapping(target = "expMonth", source = "expiry", qualifiedByName = "ymToMonth")
     @Mapping(target = "expYear", source = "expiry", qualifiedByName = "ymToYear")
     @Mapping(target = "balance", source = "initialBalance")
-    @Mapping(target = "last4", source = "last4")
+    @Mapping(target = "last4", ignore = true)
     CardEntity toEntity(CardCreateRequest req);
 
     @Mapping(target = "ownerId", source = "owner.id")
