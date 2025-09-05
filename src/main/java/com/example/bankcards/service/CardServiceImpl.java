@@ -101,6 +101,9 @@ public class CardServiceImpl implements CardService {
             if (filter.status() != null) {
                 spec = spec.and((root, q, cb) -> cb.equal(root.get("status"), filter.status()));
             }
+            if (filter.status() != null) {
+                spec = spec.and((root, q, cb) -> cb.equal(root.get("last4"), filter.last4()));
+            }
             if (filter.createdFrom() != null) {
                 spec = spec.and((root, q, cb) -> cb.greaterThanOrEqualTo(root.get("createdAt"), filter.createdFrom()));
             }
