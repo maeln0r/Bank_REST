@@ -1,35 +1,48 @@
 package com.example.bankcards.service;
 
-import com.example.bankcards.dto.user.UserSelfDtos.MeResponse;
+import com.example.bankcards.dto.user.UserSelfDtos;
 import com.example.bankcards.entity.UserEntity;
+import com.example.bankcards.exception.DomainValidationException;
+import com.example.bankcards.mapper.UserSelfMapper;
 import com.example.bankcards.repository.JpaUserRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional(readOnly = true)
-@RequiredArgsConstructor
 public class UserSelfService {
+
+    private final CurrentUserService currentUserService;
     private final JpaUserRepository users;
     private final PasswordEncoder encoder;
-    private final CurrentUserService currentUserService;
+    private final UserSelfMapper mapper;
 
-    public MeResponse me() {
+    public UserSelfService(CurrentUserService currentUserService,
+                           JpaUserRepository users,
+                           PasswordEncoder encoder,
+                           UserSelfMapper mapper) {
+        this.currentUserService = currentUserService;
+        this.users = users;
+        this.encoder = encoder;
+        this.mapper = mapper;
+    }
+
+    public UserSelfDtos.MeResponse me() {
         UserEntity u = currentUserService.getCurrentUser();
-        return new MeResponse(u.getId(), u.getUsername(), u.getEmail(), u.isEnabled(), u.getRoles(), u.getCreatedAt());
+        return mapper.toMeResponse(u);
     }
 
     @Transactional
     public void changePassword(String currentPassword, String newPassword) {
         UserEntity u = currentUserService.getCurrentUser();
         if (!encoder.matches(currentPassword, u.getPasswordHash())) {
-            throw new IllegalArgumentException("Текущий пароль указан неверно");
+            throw new DomainValidationException("Текущий пароль указан неверно");
         }
         if (encoder.matches(newPassword, u.getPasswordHash())) {
-            throw new IllegalArgumentException("Новый пароль не должен совпадать со старым");
+            throw new DomainValidationException("Новый пароль не должен совпадать со старым");
         }
         u.setPasswordHash(encoder.encode(newPassword));
+        users.save(u);
     }
 }

@@ -2,6 +2,8 @@ package com.example.bankcards.repository;
 
 
 import com.example.bankcards.entity.UserEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
@@ -16,6 +18,11 @@ public interface JpaUserRepository extends JpaRepository<UserEntity, UUID> {
     Optional<UserEntity> findByEmailIgnoreCase(String email);
 
     Optional<UserEntity> findByUsernameIgnoreCase(String username);
+
+    Page<UserEntity> findByUsernameContainingIgnoreCaseOrEmailContainingIgnoreCase(String usernamePart,
+                                                                                   String emailPart,
+                                                                                   Pageable pageable);
+
 
     boolean existsByUsername(String username);
 

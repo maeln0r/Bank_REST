@@ -25,7 +25,7 @@ public class UserAdminController {
             @org.springframework.data.web.PageableDefault(sort = "createdAt", direction = org.springframework.data.domain.Sort.Direction.DESC) Pageable pageable,
             @RequestParam(value = "query", required = false) String query
     ) {
-        return ResponseEntity.ok(service.list(pageable, query));
+        return ResponseEntity.ok(service.list(query, pageable));
     }
 
     @GetMapping("/{id}")
