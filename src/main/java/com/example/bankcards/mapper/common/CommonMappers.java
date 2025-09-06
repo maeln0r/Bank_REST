@@ -1,9 +1,12 @@
 package com.example.bankcards.mapper.common;
 
+import com.example.bankcards.config.MapStructConfig;
+import org.mapstruct.Mapper;
 import org.mapstruct.Named;
 
 import java.time.YearMonth;
 
+@Mapper(config = MapStructConfig.class)
 public interface CommonMappers {
 
     @Named("ymToMonth")

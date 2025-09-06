@@ -28,7 +28,6 @@ dependencies {
     // DB & migrations
     implementation("org.liquibase:liquibase-core:4.33.0")
     runtimeOnly("org.postgresql:postgresql:42.7.7")
-    implementation("org.mapstruct:mapstruct:1.6.3")
 
 
     // JWT (JJWT)
@@ -40,11 +39,12 @@ dependencies {
     // OpenAPI UI (springdoc)
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.11")
 
-
     compileOnly("org.projectlombok:lombok:1.18.38")
     annotationProcessor("org.projectlombok:lombok:1.18.38")
     testCompileOnly("org.projectlombok:lombok:1.18.38")
     testAnnotationProcessor("org.projectlombok:lombok:1.18.38")
+    implementation("org.mapstruct:mapstruct:1.6.0")
+    annotationProcessor("org.mapstruct:mapstruct-processor:1.6.0")
 
 
     // Test
