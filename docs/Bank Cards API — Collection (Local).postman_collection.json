@@ -1,0 +1,658 @@
+{
+	"info": {
+		"_postman_id": "9e643ad5-8aa4-47a6-8f5d-55498f6f0ec8",
+		"name": "Bank Cards API — Collection (Local)",
+		"description": "Коллекция для ручного тестирования API. Вариант B: автоподстановка токенов в Authorization, примеры тел из OpenAPI 3.1.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "13419015"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Login (200) → set tokens",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+									"var json = {}; try { json = pm.response.json(); } catch(e) {}",
+									"if (json.accessToken) pm.collectionVariables.set('ACCESS_TOKEN', json.accessToken);",
+									"if (json.refreshToken) pm.collectionVariables.set('REFRESH_TOKEN', json.refreshToken);",
+									"if (json.tokenType) pm.collectionVariables.set('TOKEN_TYPE', json.tokenType);",
+									"if (json.expiresInSeconds) pm.collectionVariables.set('EXPIRES_IN', String(json.expiresInSeconds));"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"packages": {},
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"usernameOrEmail\": \"{{USERNAME}}\",\n  \"password\": \"{{PASSWORD}}\"\n}\n// {\n//     \"usernameOrEmail\": \"new.user\",\n//     \"password\": \"Strong#123\"\n// }"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/auth/login",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Refresh (200) → set tokens",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+									"var json = {}; try { json = pm.response.json(); } catch(e) {}",
+									"if (json.accessToken) pm.collectionVariables.set('ACCESS_TOKEN', json.accessToken);",
+									"if (json.refreshToken) pm.collectionVariables.set('REFRESH_TOKEN', json.refreshToken);",
+									"if (json.tokenType) pm.collectionVariables.set('TOKEN_TYPE', json.tokenType);",
+									"if (json.expiresInSeconds) pm.collectionVariables.set('EXPIRES_IN', String(json.expiresInSeconds));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"refreshToken\": \"{{REFRESH_TOKEN}}\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/auth/refresh",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"refresh"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Users (self)",
+			"item": [
+				{
+					"name": "Get me (200)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL}}/api/users/me",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"me"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Change my password (204)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"currentPassword\": \"old\",\n  \"newPassword\": \"newStrong123\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/users/me/password",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"me",
+								"password"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Admin / Users",
+			"item": [
+				{
+					"name": "List users (200)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL}}/api/admin/users?page=0&size=20&sort=createdAt,desc",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"users"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								},
+								{
+									"key": "sort",
+									"value": "createdAt,desc"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create user (200)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status is 200', function () {\r",
+									"  pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"let json = {};\r",
+									"try { json = pm.response.json(); } catch (e) {}\r",
+									"\r",
+									"pm.test('Response has user id', function () {\r",
+									"  pm.expect(json).to.have.property('id');\r",
+									"});\r",
+									"\r",
+									"pm.collectionVariables.set('USER_ID', json.id);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"new.user\",\n  \"email\": \"new.user@example.com\",\n  \"password\": \"Strong#123\",\n  \"roles\": [\"ROLE_USER\"],\n  \"enabled\": true\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/admin/users",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get user by id (200)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL}}/api/admin/users/{{USER_ID}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"users",
+								"{{USER_ID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Patch user (200)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"updated.user@example.com\",\n  \"roles\": [\"ROLE_USER\", \"ROLE_ADMIN\"],\n  \"enabled\": true\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/admin/users/{{USER_ID}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"users",
+								"{{USER_ID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Change user password (204)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"newPassword\": \"Admin#Pass123\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/admin/users/{{USER_ID}}/password",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"users",
+								"{{USER_ID}}",
+								"password"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete user (204)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status is 204', function () {\r",
+									"  pm.response.to.have.status(204);\r",
+									"});\r",
+									"\r",
+									"pm.collectionVariables.set('USER_ID',\"\");"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL}}/api/admin/users/{{USER_ID}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"users",
+								"{{USER_ID}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Cards",
+			"item": [
+				{
+					"name": "List cards (200)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL}}/api/cards?page=0&size=20&sort=createdAt,desc",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"cards"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								},
+								{
+									"key": "sort",
+									"value": "createdAt,desc"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create card (201)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status is 200', function () {\r",
+									"  pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"let json = {};\r",
+									"try { json = pm.response.json(); } catch (e) {}\r",
+									"\r",
+									"pm.test('Response has card id', function () {\r",
+									"  pm.expect(json).to.have.property('id');\r",
+									"});\r",
+									"\r",
+									"pm.collectionVariables.set('CARD_ID', json.id);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"ownerId\": \"{{USER_ID}}\",\n  \"expiry\": \"2030-12\",\n  \"pan\": \"4111 1111 1111 1111\",\n  \"initialBalance\": 1000.00\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/cards",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"cards"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get card by id (200)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL}}/api/cards/{{CARD_ID}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"cards",
+								"{{CARD_ID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Block card (PATCH 200)",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL}}/api/cards/{{CARD_ID}}/block",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"cards",
+								"{{CARD_ID}}",
+								"block"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Activate card (PATCH 200)",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL}}/api/cards/{{CARD_ID}}/activate",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"cards",
+								"{{CARD_ID}}",
+								"activate"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Request block (204)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL}}/api/cards/{{CARD_ID}}/block-request",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"cards",
+								"{{CARD_ID}}",
+								"block-request"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Transfer between my cards (204)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"fromCardId\": \"{{CARD_ID}}\",\n  \"toCardId\": \"{{CARD_ID_2}}\",\n  \"amount\": 25.50\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/cards/transfer",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"cards",
+								"transfer"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete card (204)",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL}}/api/cards/{{CARD_ID}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"cards",
+								"{{CARD_ID}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"(function(){",
+					"  var lang = pm.collectionVariables.get('ACCEPT_LANGUAGE');",
+					"  if (lang) pm.request.headers.upsert({ key: 'Accept-Language', value: lang });",
+					"})();",
+					"",
+					"(function(){",
+					"  var token = pm.collectionVariables.get('ACCESS_TOKEN');",
+					"  var type = pm.collectionVariables.get('TOKEN_TYPE') || 'Bearer';",
+					"  if (token) pm.request.headers.upsert({ key: 'Authorization', value: type + ' ' + token });",
+					"})();"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "BASE_URL",
+			"value": "http://localhost:8080"
+		},
+		{
+			"key": "USERNAME",
+			"value": "admin"
+		},
+		{
+			"key": "PASSWORD",
+			"value": "password"
+		},
+		{
+			"key": "ACCESS_TOKEN",
+			"value": ""
+		},
+		{
+			"key": "REFRESH_TOKEN",
+			"value": ""
+		},
+		{
+			"key": "TOKEN_TYPE",
+			"value": "Bearer"
+		},
+		{
+			"key": "ACCEPT_LANGUAGE",
+			"value": "ru"
+		},
+		{
+			"key": "CARD_ID",
+			"value": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+		},
+		{
+			"key": "CARD_ID_2",
+			"value": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
+		},
+		{
+			"key": "EXPIRES_IN",
+			"value": ""
+		},
+		{
+			"key": "USER_ID",
+			"value": ""
+		}
+	]
+}

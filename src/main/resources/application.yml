@@ -14,3 +14,5 @@ app:
     exposed-headers: [X-Request-Id, Content-Disposition]
     allow-credentials: true
     max-age: 3600
+  cards:
+    pan-hmac-secret: ${CARDS_PAN_HMAC_SECRET:change-me}

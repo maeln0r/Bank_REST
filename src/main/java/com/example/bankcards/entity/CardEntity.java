@@ -19,7 +19,9 @@ import java.util.UUID;
 @Builder
 @ToString(exclude = "owner")
 @Entity
-@Table(name = "cards")
+@Table(name = "cards", uniqueConstraints = {
+        @UniqueConstraint(name = "uk_cards_owner_panfp", columnNames = {"owner_id", "pan_fingerprint"})
+})
 public class CardEntity {
     @Id
     @GeneratedValue
@@ -28,6 +30,9 @@ public class CardEntity {
     @EqualsAndHashCode.Include
     @Column(columnDefinition = "UUID")
     private UUID id;
+
+    @Column(name = "pan_fingerprint", length = 64)
+    private String panFingerprint;
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id")

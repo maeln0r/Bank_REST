@@ -1,0 +1,22 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1757266131900-2
+      author: mael0n
+      objectQuotingStrategy: QUOTE_ONLY_RESERVED_WORDS
+      changes:
+        - addColumn:
+            columns:
+              - column:
+                  name: pan_fingerprint
+                  type: VARCHAR(64)
+            tableName: cards
+  - changeSet:
+      id: 1757266131900-3
+      author: mael0n
+      objectQuotingStrategy: QUOTE_ONLY_RESERVED_WORDS
+      changes:
+        - addUniqueConstraint:
+            columnNames: owner_id, pan_fingerprint
+            constraintName: uk_cards_owner_panfp
+            tableName: cards
+

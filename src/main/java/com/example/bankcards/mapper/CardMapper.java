@@ -18,6 +18,7 @@ public interface CardMapper {
     @Mapping(target = "expYear", source = "expiry", qualifiedByName = "ymToYear")
     @Mapping(target = "balance", source = "initialBalance")
     @Mapping(target = "last4", ignore = true)
+    @Mapping(target = "panFingerprint", ignore = true)
     CardEntity toEntity(CardCreateRequest req);
 
     @Mapping(target = "ownerId", source = "owner.id")

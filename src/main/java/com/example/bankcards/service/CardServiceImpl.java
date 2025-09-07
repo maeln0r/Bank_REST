@@ -13,6 +13,7 @@ import com.example.bankcards.repository.spec.CardSpecifications;
 import com.example.bankcards.service.support.CardStatusTransitions;
 import com.example.bankcards.util.PageableUtils;
 import com.example.bankcards.config.MoneyProperties;
+import com.example.bankcards.util.PanHasher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -31,12 +32,14 @@ public class CardServiceImpl implements CardService {
     private final JpaUserRepository userRepo;
     private final CardMapper mapper;
     private final MoneyProperties money;
+    private final PanHasher panHasher;
 
-    public CardServiceImpl(JpaCardRepository cardRepo, JpaUserRepository userRepo, CardMapper mapper, MoneyProperties money) {
+    public CardServiceImpl(JpaCardRepository cardRepo, JpaUserRepository userRepo, CardMapper mapper, MoneyProperties money, PanHasher panHasher) {
         this.cardRepo = cardRepo;
         this.userRepo = userRepo;
         this.mapper = mapper;
         this.money = money;
+        this.panHasher = panHasher;
     }
 
     @Override
@@ -46,12 +49,16 @@ public class CardServiceImpl implements CardService {
                 .orElseThrow(() -> new NotFoundException("error.user.not_found"));
 
         String pan = normalizePan(req.pan());
+
+        String panFp = getFp(pan, owner);
+
         String last4 = pan.substring(pan.length() - 4);
 
         BigDecimal initial = normalizeInitialBalance(req.initialBalance());
 
         var entity = mapper.toEntity(req);
         entity.setOwner(owner);
+        entity.setPanFingerprint(panFp);
         entity.setLast4(last4);
         entity.setBalance(initial);
         return mapper.toDto(cardRepo.save(entity));
@@ -225,7 +232,7 @@ public class CardServiceImpl implements CardService {
         to.setBalance(toAfter);
     }
 
-    private static String normalizePan(String raw) {
+    private String normalizePan(String raw) {
         if (raw == null) throw new DomainValidationException("error.card.pan.required", "pan");
         String digits = raw.replaceAll("\\D", "");
         int len = digits.length();
@@ -235,10 +242,11 @@ public class CardServiceImpl implements CardService {
         if (!luhnValid(digits)) {
             throw new DomainValidationException("error.card.pan.luhn", "pan");
         }
+
         return digits;
     }
 
-    private static boolean luhnValid(String digits) {
+    private boolean luhnValid(String digits) {
         int sum = 0;
         boolean doubleIt = false;
         for (int i = digits.length() - 1; i >= 0; i--) {
@@ -251,5 +259,14 @@ public class CardServiceImpl implements CardService {
             doubleIt = !doubleIt;
         }
         return sum % 10 == 0;
+    }
+
+    private String getFp(String pan, UserEntity owner) {
+        String panFp = panHasher.fingerprint(pan);
+
+        if (cardRepo.existsByOwnerIdAndPanFingerprint(owner.getId(), panFp)) {
+            throw new DomainValidationException("error.card.duplicate", "pan");
+        }
+        return panFp;
     }
 }

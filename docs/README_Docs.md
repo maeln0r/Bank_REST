@@ -208,3 +208,7 @@ curl -i -X POST "$BASE/api/cards/transfer" \
 ## CORS (для фронтенда)
 
 Настраивается через свойства `app.cors.*` (бин `CorsProps`). Из переменных application.yaml
+
+## Ручные тесты через Postman
+
+В файле `Bank Cards API — Collection (Local).postman_collection.json` можно посмотреть минимальную реализацию api c заполненными тестовыми данными

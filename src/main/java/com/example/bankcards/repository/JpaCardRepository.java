@@ -26,4 +26,6 @@ public interface JpaCardRepository extends JpaRepository<CardEntity, UUID>, JpaS
             "where c.status <> com.example.bankcards.entity.CardStatus.EXPIRED " +
             "and (c.expYear < :year or (c.expYear = :year and c.expMonth < :month))")
     int markExpired(@Param("year") int year, @Param("month") int month);
+
+    boolean existsByOwnerIdAndPanFingerprint(UUID ownerId, String panFingerprint);
 }
