@@ -1,0 +1,16 @@
+<configuration>
+    <property name="LOG_PATTERN" value="%d{yyyy-MM-ddTHH:mm:ssXXX} %-5level traceId=%X{traceId} userId=%X{userId} %logger{36} - %msg%n"/>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="STDOUT"/>
+    </root>
+
+    <logger name="org.springframework" level="WARN"/>
+</configuration>

@@ -26,13 +26,13 @@ public class CurrentUserService {
         String username = getCurrentUsername();
         return users.findByUsernameIgnoreCase(username)
                 .orElseGet(() -> users.findByEmailIgnoreCase(username)
-                        .orElseThrow(() -> new NotFoundException("User not found by principal: %s".formatted(username))));
+                        .orElseThrow(() -> new NotFoundException("error.user.not_found")));
     }
 
     public String getCurrentUsername() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || auth.getName() == null) {
-            throw new IllegalStateException("Unauthenticated");
+            throw new org.springframework.security.authentication.AuthenticationCredentialsNotFoundException("error.unauthorized");
         }
         return auth.getName();
     }

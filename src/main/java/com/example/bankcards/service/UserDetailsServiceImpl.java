@@ -23,7 +23,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         UserEntity u = users.findByUsernameIgnoreCase(username)
                 .or(() -> users.findByEmailIgnoreCase(username))
-                .orElseThrow(() -> new UsernameNotFoundException("Пользователь %s не найден".formatted(username)));
+                .orElseThrow(() -> new UsernameNotFoundException("error.user.not_found"));
         Set<GrantedAuthority> authorities = u.getRoles().stream()
                 .map(r -> new SimpleGrantedAuthority(r.name()))
                 .collect(Collectors.toSet());

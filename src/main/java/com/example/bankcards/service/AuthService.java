@@ -44,7 +44,7 @@ public class AuthService {
         RefreshTokenEntity rt = refreshTokens.findByToken(req.refreshToken())
                 .filter(t -> !t.isRevoked())
                 .filter(t -> t.getExpiresAt().isAfter(OffsetDateTime.now()))
-                .orElseThrow(() -> new IllegalArgumentException("Не валидный refresh token"));
+                .orElseThrow(() -> new org.springframework.security.authentication.BadCredentialsException("error.refresh.invalid"));
         rt.setRevoked(true);
         refreshTokens.save(rt);
         return issueTokens(rt.getUser());

@@ -43,7 +43,7 @@ public class CardServiceImpl implements CardService {
     @Transactional
     public CardResponse create(CardCreateRequest req) {
         UserEntity owner = userRepo.findById(req.ownerId())
-                .orElseThrow(() -> new NotFoundException("User not found: %s".formatted(req.ownerId())));
+                .orElseThrow(() -> new NotFoundException("error.user.not_found"));
 
         String pan = normalizePan(req.pan());
         String last4 = pan.substring(pan.length() - 4);
@@ -74,7 +74,7 @@ public class CardServiceImpl implements CardService {
             return mapper.toDto(c);
         }
         if (c.getStatus() == CardStatus.EXPIRED) {
-            throw new DomainValidationException("Cannot block an expired card");
+            throw new DomainValidationException("error.card.cannot_block_expired");
         }
         CardStatusTransitions.requireTransition(c, CardStatus.BLOCKED, YearMonth.now());
         c.setStatus(CardStatus.BLOCKED);
@@ -85,7 +85,7 @@ public class CardServiceImpl implements CardService {
     @Transactional
     public void delete(UUID cardId) {
         CardEntity c = cardRepo.findById(cardId)
-                .orElseThrow(() -> new NotFoundException("Card not found: %s".formatted(cardId)));
+                .orElseThrow(() -> new NotFoundException("error.card.not_found"));
         cardRepo.delete(c);
     }
 
@@ -93,7 +93,7 @@ public class CardServiceImpl implements CardService {
     @Transactional(readOnly = true)
     public CardResponse get(UUID cardId) {
         return mapper.toDto(cardRepo.findById(cardId)
-                .orElseThrow(() -> new NotFoundException("Card not found: %s".formatted(cardId))));
+                .orElseThrow(() -> new NotFoundException("error.card.not_found")));
     }
 
     @Override
@@ -116,10 +116,10 @@ public class CardServiceImpl implements CardService {
     @Transactional
     public void transferBetweenOwnCards(UUID currentUserId, UUID fromId, UUID toId, BigDecimal amount) {
         if (fromId.equals(toId)) {
-            throw new DomainValidationException("Source and target cards must differ");
+            throw new DomainValidationException("error.card.transfer.same_cards", "targetCardId");
         }
         if (amount == null || amount.signum() <= 0) {
-            throw new DomainValidationException("Amount must be > 0");
+            throw new DomainValidationException("error.amount.positive", "amount");
         }
 
         BigDecimal normalizedAmount = normalizeTransferAmount(amount);
@@ -127,21 +127,21 @@ public class CardServiceImpl implements CardService {
         UUID firstId = fromId.compareTo(toId) <= 0 ? fromId : toId;
         UUID secondId = fromId.compareTo(toId) <= 0 ? toId : fromId;
         CardEntity first = cardRepo.findByIdForUpdate(firstId)
-                .orElseThrow(() -> new NotFoundException("Card not found: %s".formatted(firstId)));
+                .orElseThrow(() -> new NotFoundException("error.card.not_found"));
         CardEntity second = cardRepo.findByIdForUpdate(secondId)
-                .orElseThrow(() -> new NotFoundException("Card not found: %s".formatted(secondId)));
+                .orElseThrow(() -> new NotFoundException("error.card.not_found"));
         CardEntity from = first.getId().equals(fromId) ? first : second;
         CardEntity to = from == first ? second : first;
 
         if (!from.getOwner().getId().equals(currentUserId) || !to.getOwner().getId().equals(currentUserId)) {
-            throw new DomainValidationException("Both cards must belong to the current user");
+            throw new DomainValidationException("error.card.transfer.not_owner");
         }
         if (from.getStatus() != CardStatus.ACTIVE || to.getStatus() != CardStatus.ACTIVE) {
-            throw new DomainValidationException("Both cards must be ACTIVE");
+            throw new DomainValidationException("error.card.transfer.not_active");
         }
         YearMonth now = YearMonth.now();
         if (CardStatusTransitions.isExpired(from, now) || CardStatusTransitions.isExpired(to, now)) {
-            throw new DomainValidationException("Card expired");
+            throw new DomainValidationException("error.card.expired");
         }
 
         applyTransferBalances(from, to, normalizedAmount);
@@ -151,16 +151,16 @@ public class CardServiceImpl implements CardService {
     @Transactional
     public void requestBlock(UUID currentUserId, UUID cardId) {
         CardEntity c = cardRepo.findByIdForUpdate(cardId)
-                .orElseThrow(() -> new NotFoundException("Card not found: %s".formatted(cardId)));
+                .orElseThrow(() -> new NotFoundException("error.card.not_found"));
         if (!c.getOwner().getId().equals(currentUserId)) {
-            throw new DomainValidationException("Only owner can request block");
+            throw new DomainValidationException("error.card.block.not_owner");
         }
         if (c.getStatus() == CardStatus.PENDING_BLOCK) {
             return;
         }
         YearMonth now = YearMonth.now();
         if (CardStatusTransitions.isExpired(c, now)) {
-            throw new DomainValidationException("Cannot request block for expired card");
+            throw new DomainValidationException("error.card.block.expired");
         }
         CardStatusTransitions.requireTransition(c, CardStatus.PENDING_BLOCK, now);
         c.setStatus(CardStatus.PENDING_BLOCK);
@@ -168,7 +168,7 @@ public class CardServiceImpl implements CardService {
 
     private CardEntity getForUpdate(UUID id) {
         return cardRepo.findByIdForUpdate(id)
-                .orElseThrow(() -> new NotFoundException("Card not found: %s".formatted(id)));
+                .orElseThrow(() -> new NotFoundException("error.card.not_found"));
     }
 
     private BigDecimal normalizeInitialBalance(BigDecimal raw) {
@@ -178,14 +178,14 @@ public class CardServiceImpl implements CardService {
 
         BigDecimal v = (raw == null ? BigDecimal.ZERO : raw);
         if (v.scale() > SCALE) {
-            throw new DomainValidationException("Initial balance must have at most %d decimal places".formatted(SCALE));
+            throw new DomainValidationException("error.amount.scale_exceeded", "initialBalance", new Object[]{SCALE});
         }
         v = v.setScale(SCALE, RM);
         if (v.compareTo(BigDecimal.ZERO) < 0) {
-            throw new DomainValidationException("Initial balance must be >= 0");
+            throw new DomainValidationException("error.amount.non_negative", "initialBalance");
         }
         if (v.compareTo(MAX_BALANCE) > 0) {
-            throw new DomainValidationException("Initial balance exceeds system limit");
+            throw new DomainValidationException("error.amount.system_limit_exceeded", "initialBalance");
         }
         return v;
     }
@@ -196,11 +196,11 @@ public class CardServiceImpl implements CardService {
         BigDecimal MAX_AMOUNT = money.getMaxAmount();
 
         if (raw.scale() > SCALE) {
-            throw new DomainValidationException("Amount must have at most %d decimal places".formatted(SCALE));
+            throw new DomainValidationException("error.amount.scale_exceeded", "amount", new Object[]{SCALE});
         }
         BigDecimal v = raw.setScale(SCALE, RM);
         if (v.compareTo(MAX_AMOUNT) > 0) {
-            throw new DomainValidationException("Amount exceeds system limit");
+            throw new DomainValidationException("error.amount.system_limit_exceeded", "amount");
         }
         return v;
     }
@@ -214,11 +214,11 @@ public class CardServiceImpl implements CardService {
         BigDecimal toBal = to.getBalance().setScale(SCALE, RM);
         BigDecimal fromAfter = fromBal.subtract(normalizedAmount);
         if (fromAfter.signum() < 0) {
-            throw new DomainValidationException("Insufficient funds");
+            throw new DomainValidationException("error.funds.insufficient", "amount");
         }
         BigDecimal toAfter = toBal.add(normalizedAmount);
         if (toAfter.compareTo(MAX_BALANCE) > 0) {
-            throw new DomainValidationException("Target balance would exceed system limit");
+            throw new DomainValidationException("error.balance.target_limit_exceeded", "targetCardId");
         }
 
         from.setBalance(fromAfter);
@@ -226,14 +226,14 @@ public class CardServiceImpl implements CardService {
     }
 
     private static String normalizePan(String raw) {
-        if (raw == null) throw new DomainValidationException("PAN is required");
+        if (raw == null) throw new DomainValidationException("error.card.pan.required", "pan");
         String digits = raw.replaceAll("\\D", "");
         int len = digits.length();
         if (len < 13 || len > 19) {
-            throw new DomainValidationException("PAN must be 13–19 digits");
+            throw new DomainValidationException("error.card.pan.length", "pan");
         }
         if (!luhnValid(digits)) {
-            throw new DomainValidationException("PAN failed Luhn check");
+            throw new DomainValidationException("error.card.pan.luhn", "pan");
         }
         return digits;
     }

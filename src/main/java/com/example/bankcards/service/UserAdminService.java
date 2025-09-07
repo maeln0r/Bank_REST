@@ -39,7 +39,7 @@ public class UserAdminService {
 
     public UserAdminDtos.UserResponse get(UUID id) {
         UserEntity u = users.findById(id)
-                .orElseThrow(() -> new NotFoundException("User not found: %s".formatted(id)));
+                .orElseThrow(() -> new NotFoundException("error.user.not_found"));
         return mapper.toUserResponse(u);
     }
 
@@ -54,7 +54,7 @@ public class UserAdminService {
     @Transactional
     public UserAdminDtos.UserResponse update(UUID id, UserAdminDtos.UpdateUserRequest req) {
         UserEntity u = users.findById(id)
-                .orElseThrow(() -> new NotFoundException("User not found: %s".formatted(id)));
+                .orElseThrow(() -> new NotFoundException("error.user.not_found"));
         mapper.update(req, u);
         return mapper.toUserResponse(u);
     }
@@ -62,9 +62,9 @@ public class UserAdminService {
     @Transactional
     public void changePassword(UUID id, String newPassword) {
         UserEntity u = users.findById(id)
-                .orElseThrow(() -> new NotFoundException("User not found: %s".formatted(id)));
+                .orElseThrow(() -> new NotFoundException("error.user.not_found"));
         if (encoder.matches(newPassword, u.getPasswordHash())) {
-            throw new DomainValidationException("Новый пароль не должен совпадать со старым");
+            throw new DomainValidationException("error.password.same_as_old", "newPassword");
         }
         u.setPasswordHash(encoder.encode(newPassword));
         users.save(u);
@@ -73,7 +73,7 @@ public class UserAdminService {
     @Transactional
     public void delete(UUID id) {
         UserEntity u = users.findById(id)
-                .orElseThrow(() -> new NotFoundException("User not found: %s".formatted(id)));
+                .orElseThrow(() -> new NotFoundException("error.user.not_found"));
         users.delete(u);
     }
 }

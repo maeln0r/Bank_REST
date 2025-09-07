@@ -22,12 +22,15 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 
 import java.net.URI;
 import java.time.Instant;
-import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -50,15 +53,22 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(NotFoundException.class)
     public ResponseEntity<Object> handleNotFound(NotFoundException ex, HttpServletRequest req) {
         log.warn("NotFound: {}", ex.getMessage());
-        String msg = msg("error.not_found");
-        return build(HttpStatus.NOT_FOUND, "error.not_found", msg, List.of(), req);
+        String code = (ex.getMessage() != null && ex.getMessage().matches("[A-Za-z0-9_.-]+"))
+                ? ex.getMessage()
+                : "error.not_found";
+        String msg = msg(code);
+        return build(HttpStatus.NOT_FOUND, code, msg, List.of(), req);
     }
 
     @ExceptionHandler(DomainValidationException.class)
     public ResponseEntity<Object> handleDomainValidation(DomainValidationException ex, HttpServletRequest req) {
-        log.warn("Validation: {}", ex.getMessage());
-        String msg = msg("error.validation");
-        return build(HttpStatus.UNPROCESSABLE_ENTITY, "error.validation", msg, List.of(), req);
+        log.warn("Validation: {} (field={})", ex.getCode(), ex.getField());
+        String msg = msg(ex.getCode(), ex.getArgs());
+        List<FieldErrorItem> list = new ArrayList<>();
+        if (ex.getField() != null) {
+            list.add(new FieldErrorItem(ex.getField(), msg, ex.getCode()));
+        }
+        return build(ex.getStatus(), ex.getCode(), msg, list, req);
     }
 
 
@@ -101,6 +111,31 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
 
+    @Override
+    protected ResponseEntity<Object> handleHttpMessageNotReadable(HttpMessageNotReadableException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        log.warn("BadJson: {}", ex.getMostSpecificCause() != null ? ex.getMostSpecificCause().getMessage() : ex.getMessage());
+        return build(HttpStatus.BAD_REQUEST, "error.bad_request", msg("error.bad_request"), List.of(), null);
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<Object> handleTypeMismatch(MethodArgumentTypeMismatchException ex, HttpServletRequest req) {
+        log.warn("TypeMismatch: {}", ex.getMessage());
+        return build(HttpStatus.BAD_REQUEST, "error.bad_request", msg("error.bad_request"), List.of(), req);
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleMissingServletRequestParameter(MissingServletRequestParameterException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        log.warn("MissingParam: {}", ex.getMessage());
+        return build(HttpStatus.BAD_REQUEST, "error.bad_request", msg("error.bad_request"), List.of(), null);
+    }
+
+    @ExceptionHandler(MissingRequestHeaderException.class)
+    public ResponseEntity<Object> handleMissingHeader(MissingRequestHeaderException ex, HttpServletRequest req) {
+        log.warn("MissingHeader: {}", ex.getMessage());
+        return build(HttpStatus.BAD_REQUEST, "error.bad_request", msg("error.bad_request"), List.of(), req);
+    }
+
+
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<Object> handleAccessDenied(AccessDeniedException ex, HttpServletRequest req) {
         log.warn("AccessDenied: {}", ex.getMessage());
@@ -129,7 +164,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @Override
     protected ResponseEntity<Object> handleHttpMediaTypeNotSupported(HttpMediaTypeNotSupportedException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
         log.warn("UnsupportedMediaType: {}", ex.getMessage());
-        return build(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "error.bad_request", msg("error.bad_request"), List.of(), null);
+        return build(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "error.unsupported_media_type", msg("error.unsupported_media_type"), List.of(), null);
     }
 
 
@@ -143,18 +178,22 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     private ResponseEntity<Object> build(HttpStatus status, String code, String message, List<FieldErrorItem> errors, HttpServletRequest req) {
         ProblemDetail pd = ProblemDetail.forStatusAndDetail(status, message);
         pd.setTitle(status.getReasonPhrase());
-
         if (req != null) {
             try {
                 pd.setInstance(URI.create(req.getRequestURI()));
             } catch (Exception ignored) {
             }
         }
-
         Instant now = Instant.now();
         pd.setProperty("timestamp", DateTimeFormatter.ISO_INSTANT.format(now));
         pd.setProperty("epochMillis", now.toEpochMilli());
-        pd.setProperty("code", code);
+        if (code != null && !code.isBlank()) {
+            pd.setProperty("code", code);
+            try {
+                pd.setType(URI.create("urn:error:%s".formatted(code)));
+            } catch (Exception ignored) {
+            }
+        }
         String traceId = MDC.get("traceId");
         if (traceId != null) pd.setProperty("traceId", traceId);
         String path = MDC.get("path");

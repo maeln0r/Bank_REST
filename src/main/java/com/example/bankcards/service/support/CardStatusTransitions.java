@@ -34,13 +34,13 @@ public final class CardStatusTransitions {
             return;
         }
         if (!ALLOWED.getOrDefault(from, Set.of()).contains(target)) {
-            throw new DomainValidationException("Illegal status transition: %s -> %s".formatted(from, target));
+            throw new DomainValidationException("error.card.status_illegal", null, new Object[]{from, target});
         }
         if (target == CardStatus.ACTIVE && isExpired(c, now)) {
-            throw new DomainValidationException("Cannot activate expired card");
+            throw new DomainValidationException("error.card.cannot_activate_expired");
         }
         if (target == CardStatus.EXPIRED && !isExpired(c, now)) {
-            throw new DomainValidationException("Cannot expire a non-expired card");
+            throw new DomainValidationException("error.card.cannot_expire_not_expired");
         }
     }
 }

@@ -37,10 +37,10 @@ public class UserSelfService {
     public void changePassword(String currentPassword, String newPassword) {
         UserEntity u = currentUserService.getCurrentUser();
         if (!encoder.matches(currentPassword, u.getPasswordHash())) {
-            throw new DomainValidationException("Текущий пароль указан неверно");
+            throw new DomainValidationException("error.password.current_invalid", "currentPassword");
         }
         if (encoder.matches(newPassword, u.getPasswordHash())) {
-            throw new DomainValidationException("Новый пароль не должен совпадать со старым");
+            throw new DomainValidationException("error.password.same_as_old", "newPassword");
         }
         u.setPasswordHash(encoder.encode(newPassword));
         users.save(u);

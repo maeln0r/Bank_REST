@@ -53,7 +53,7 @@ public class CardController {
         boolean isAdmin = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
         if (!isAdmin) {
             if (!dto.ownerId().equals(currentUser.getCurrentUserId())) {
-                throw new com.example.bankcards.exception.NotFoundException("Card not found");
+                throw new com.example.bankcards.exception.NotFoundException("error.card.not_found");
             }
         }
         return dto;
