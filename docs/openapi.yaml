@@ -1,1 +1,850 @@
-# Здесь будет OpenAPI описание всех доступных эндпоинтов и моделей данных.
+openapi: 3.1.0
+jsonSchemaDialect: https://spec.openapis.org/oas/3.1/dialect/base
+info:
+  title: Bank Cards API
+  version: 0.2.0
+  description: |
+    REST API for authentication, users, bank cards management and transfers.
+
+    Error responses follow **RFC 7807** (`application/problem+json`) with extensions:
+    - `code` – stable application error code (e.g. `error.password.current_invalid`)
+    - `timestamp` – ISO‑8601 UTC string
+    - `epochMillis` – milliseconds since epoch (UTC)
+    - `traceId` – correlation id (also in `X-Request-Id`)
+    - `path` – request path
+    - `errors[]` – optional field-level errors: `{ field, message, code }`
+servers:
+  - url: http://host.docker.internal:8080
+    description: Local
+security:
+  - bearerAuth: []
+tags:
+  - name: Auth
+    description: Authentication & token management
+  - name: Users
+    description: Current user profile and settings
+  - name: Admin
+    description: Admin users management (ROLE_ADMIN)
+  - name: Cards
+    description: Card CRUD & transfers
+paths:
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      operationId: authLogin
+      summary: Authenticate with username/email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+              examples:
+                badCreds:
+                  value:
+                    type: urn:error:error.auth.bad_credentials
+                    title: Unauthorized
+                    status: 401
+                    detail: Invalid username or password
+                    code: error.auth.bad_credentials
+                    traceId: 11111111-2222-3333-4444-555555555555
+                    timestamp: 2025-09-07T09:00:00Z
+                    epochMillis: 1757235600000
+                    path: /api/auth/login
+        '400': { $ref: '#/components/responses/BadRequest' }
+  /api/auth/refresh:
+    post:
+      tags: [Auth]
+      operationId: authRefresh
+      summary: Exchange refresh token for a new access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+      responses:
+        '200':
+          description: Refreshed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '401':
+          description: Invalid refresh token
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+              examples:
+                invalidRefresh:
+                  value:
+                    type: urn:error:error.refresh.invalid
+                    title: Unauthorized
+                    status: 401
+                    detail: Invalid refresh token
+                    code: error.refresh.invalid
+                    traceId: 11111111-2222-3333-4444-555555555555
+                    timestamp: 2025-09-07T09:00:00Z
+                    epochMillis: 1757235600000
+                    path: /api/auth/refresh
+        '400': { $ref: '#/components/responses/BadRequest' }
+  /api/users/me:
+    get:
+      tags: [Users]
+      operationId: getMe
+      summary: Get current user profile
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /api/users/me/password:
+    post:
+      tags: [Users]
+      operationId: changeMyPassword
+      summary: Change current user's password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserChangePasswordRequest'
+      responses:
+        '204':
+          description: Password changed
+        '422':
+          description: Domain validation error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+              examples:
+                currentInvalid:
+                  value:
+                    type: urn:error:error.password.current_invalid
+                    title: Unprocessable Entity
+                    status: 422
+                    detail: Current password is incorrect
+                    code: error.password.current_invalid
+                    errors:
+                      - field: currentPassword
+                        message: Current password is incorrect
+                        code: error.password.current_invalid
+                    traceId: d7620141-e60f-4b21-84d2-4680a7525571
+                    timestamp: 2025-09-07T09:00:00Z
+                    epochMillis: 1757235600000
+                    path: /api/users/me/password
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/admin/users:
+    get:
+      tags: [Admin]
+      operationId: adminListUsers
+      summary: List users (paged)
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/size'
+        - $ref: '#/components/parameters/sort'
+        - name: query
+          in: query
+          required: false
+          description: Optional search query (username/email)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageUserResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Admin]
+      operationId: adminCreateUser
+      summary: Create user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '200':
+          description: Created (returns created user)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /api/admin/users/{id}:
+    get:
+      tags: [Admin]
+      operationId: adminGetUser
+      summary: Get user by id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [Admin]
+      operationId: adminUpdateUser
+      summary: Update user fields (partial)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Admin]
+      operationId: adminDeleteUser
+      summary: Delete user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204': { description: Deleted }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /api/admin/users/{id}/password:
+    post:
+      tags: [Admin]
+      operationId: adminChangePassword
+      summary: Change user's password (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminChangePasswordRequest'
+      responses:
+        '204': { description: Password changed }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/cards:
+    get:
+      tags: [Cards]
+      operationId: listCards
+      summary: List current user's cards (paged)
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/size'
+        - $ref: '#/components/parameters/sort'
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/CardStatus'
+        - name: createdFrom
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: createdTo
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: last4
+          in: query
+          required: false
+          schema:
+            type: string
+            pattern: '^\\d{4}$'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageCardResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [Cards]
+      operationId: createCard
+      summary: Create a new card
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CardCreateRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '422':
+          description: Domain validation error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+  /api/cards/{id}:
+    get:
+      tags: [Cards]
+      operationId: getCard
+      summary: Get card by id (own cards only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Cards]
+      operationId: deleteCard
+      summary: Delete card
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204': { description: Deleted }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /api/cards/{id}/block:
+    patch:
+      tags: [Cards]
+      operationId: blockCard
+      summary: Block card (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Card status updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422':
+          description: Domain validation error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+  /api/cards/{id}/activate:
+    patch:
+      tags: [Cards]
+      operationId: activateCard
+      summary: Activate card (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Card status updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422':
+          description: Domain validation error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+  /api/cards/{id}/block-request:
+    post:
+      tags: [Cards]
+      operationId: requestBlockCard
+      summary: Request to block own card (user)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204': { description: Request accepted }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422':
+          description: Domain validation error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+  /api/cards/transfer:
+    post:
+      tags: [Cards]
+      operationId: transferBetweenOwnCards
+      summary: Transfer money between two of the current user's cards
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferRequest'
+      responses:
+        '204': { description: Transfer completed }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422':
+          description: Domain validation error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    page:
+      name: page
+      in: query
+      description: Page index (0-based)
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+    size:
+      name: size
+      in: query
+      description: Page size
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 200
+        default: 20
+    sort:
+      name: sort
+      in: query
+      description: Sort by property, e.g. `createdAt,desc`. Repeatable.
+      schema:
+        type: string
+  responses:
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+    Forbidden:
+      description: Forbidden
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+    NotFound:
+      description: Resource not found
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+    BadRequest:
+      description: Bad request
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+  schemas:
+    ProblemDetail:
+      type: object
+      description: RFC7807 problem details with service-specific extensions
+      properties:
+        type:
+          type: string
+          format: uri
+          example: urn:error:error.validation
+        title:
+          type: string
+          example: Unprocessable Entity
+        status:
+          type: integer
+          format: int32
+          example: 422
+        detail:
+          type: string
+          example: Validation error
+        instance:
+          type: string
+          format: uri
+          example: /api/users/me/password
+        code:
+          type: string
+          example: error.password.current_invalid
+        timestamp:
+          type: string
+          format: date-time
+          description: ISO-8601 UTC timestamp
+          example: 2025-09-07T09:00:00Z
+        epochMillis:
+          type: integer
+          format: int64
+          example: 1757235600000
+        traceId:
+          type: string
+          example: 8b107f95-a280-4831-ba6f-26e91d27297f
+        path:
+          type: string
+          example: /api/users/me/password
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldError'
+    FieldError:
+      type: object
+      properties:
+        field:
+          anyOf:
+            - type: string
+            - type: 'null'
+          example: currentPassword
+        message:
+          type: string
+          example: Current password is incorrect
+        code:
+          type: string
+          example: error.password.current_invalid
+
+    # ==== Auth ====
+    LoginRequest:
+      type: object
+      required: [usernameOrEmail, password]
+      properties:
+        usernameOrEmail:
+          type: string
+          example: user@example.com
+        password:
+          type: string
+          format: password
+          example: secret
+    TokenResponse:
+      type: object
+      required: [tokenType, accessToken, refreshToken, expiresInSeconds]
+      properties:
+        tokenType:
+          type: string
+          example: Bearer
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        expiresInSeconds:
+          type: integer
+          format: int64
+          description: Access token TTL in seconds
+          example: 3600
+    RefreshRequest:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken:
+          type: string
+
+    # ==== Users (self/admin) ====
+    RoleType:
+      type: string
+      enum: [ROLE_USER, ROLE_ADMIN]
+    MeResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        enabled:
+          type: boolean
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleType'
+        createdAt:
+          type: string
+          format: date-time
+    UserResponse:
+      allOf:
+        - $ref: '#/components/schemas/MeResponse'
+    CreateUserRequest:
+      type: object
+      required: [username, email, password]
+      properties:
+        username:
+          type: string
+          minLength: 3
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 6
+          format: password
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleType'
+        enabled:
+          type: boolean
+    UpdateUserRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 3
+        email:
+          type: string
+          format: email
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleType'
+        enabled:
+          type: boolean
+    AdminChangePasswordRequest:
+      type: object
+      required: [newPassword]
+      properties:
+        newPassword:
+          type: string
+          minLength: 6
+          format: password
+    UserChangePasswordRequest:
+      type: object
+      required: [currentPassword, newPassword]
+      properties:
+        currentPassword:
+          type: string
+          format: password
+        newPassword:
+          type: string
+          minLength: 6
+          format: password
+
+    # ==== Cards ====
+    CardStatus:
+      type: string
+      enum: [ACTIVE, PENDING_BLOCK, BLOCKED, EXPIRED]
+    CardResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        ownerId:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/CardStatus'
+        expMonth:
+          type: integer
+          minimum: 1
+          maximum: 12
+        expYear:
+          type: integer
+          minimum: 2000
+          maximum: 2100
+        balance:
+          type: number
+          format: double
+        last4:
+          type: string
+          pattern: '^\\d{4}$'
+        maskedNumber:
+          type: string
+          readOnly: true
+          description: Masked PAN representation, e.g. **** **** **** 1234
+        createdAt:
+          type: string
+          format: date-time
+    CardCreateRequest:
+      type: object
+      required: [ownerId, expiry, pan]
+      properties:
+        ownerId:
+          type: string
+          format: uuid
+        expiry:
+          type: string
+          description: Card expiry in yyyy-MM format
+          pattern: '^[0-9]{4}-[0-9]{2}$'
+          example: '2030-12'
+        pan:
+          type: string
+          writeOnly: true
+          description: Primary Account Number (only last4 is stored)
+          pattern: '^[0-9\\s-]{13,23}$'
+          example: '4111 1111 1111 1111'
+        initialBalance:
+          type: number
+          format: double
+          minimum: 0
+          description: Optional initial balance; server validates scale/limits
+    TransferRequest:
+      type: object
+      required: [fromCardId, toCardId, amount]
+      properties:
+        fromCardId:
+          type: string
+          format: uuid
+        toCardId:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          format: double
+          description: Must be > 0; server validates scale/limits
+
+    # ==== Pagination (simplified Spring Page) ====
+    PageUserResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserResponse'
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+        size:
+          type: integer
+        number:
+          type: integer
+        sort:
+          type: string
+        first:
+          type: boolean
+        last:
+          type: boolean
+        numberOfElements:
+          type: integer
+        empty:
+          type: boolean
+    PageCardResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/CardResponse'
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+        size:
+          type: integer
+        number:
+          type: integer
+        sort:
+          type: string
+        first:
+          type: boolean
+        last:
+          type: boolean
+        numberOfElements:
+          type: integer
+        empty:
+          type: boolean

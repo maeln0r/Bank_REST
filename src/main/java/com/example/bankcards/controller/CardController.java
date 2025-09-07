@@ -1,5 +1,6 @@
 package com.example.bankcards.controller;
 
+import com.example.bankcards.dto.PageResponse;
 import com.example.bankcards.dto.card.*;
 import com.example.bankcards.service.CardService;
 import com.example.bankcards.service.CurrentUserService;
@@ -7,6 +8,7 @@ import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -35,14 +37,16 @@ public class CardController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
-    public Page<CardResponse> list(@Valid CardFilter filter, Pageable pageable, Authentication auth) {
+    public ResponseEntity<PageResponse<CardResponse>> list(@Valid CardFilter filter, Pageable pageable, Authentication auth) {
         boolean isAdmin = auth.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .anyMatch("ROLE_ADMIN"::equals);
         if (isAdmin) {
-            return service.list(filter, pageable);
+            Page<CardResponse> page = service.list(filter, pageable);
+            return ResponseEntity.ok(PageResponse.from(page));
         } else {
-            return service.listForOwner(filter, pageable, currentUser.getCurrentUserId());
+            Page<CardResponse> page = service.listForOwner(filter, pageable, currentUser.getCurrentUserId());
+            return ResponseEntity.ok(PageResponse.from(page));
         }
     }
 

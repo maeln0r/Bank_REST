@@ -45,6 +45,12 @@ public class UserAdminService {
 
     @Transactional
     public UserAdminDtos.UserResponse create(UserAdminDtos.CreateUserRequest req) {
+        if (users.existsByUsernameIgnoreCase(req.username())) {
+            throw new DomainValidationException("error.user.username_taken", "username");
+        }
+        if (users.existsByEmailIgnoreCase(req.email())) {
+            throw new DomainValidationException("error.user.email_taken", "email");
+        }
         UserEntity u = mapper.toEntity(req);
         u.setPasswordHash(encoder.encode(req.password()));
         UserEntity saved = users.save(u);
@@ -55,6 +61,14 @@ public class UserAdminService {
     public UserAdminDtos.UserResponse update(UUID id, UserAdminDtos.UpdateUserRequest req) {
         UserEntity u = users.findById(id)
                 .orElseThrow(() -> new NotFoundException("error.user.not_found"));
+
+        if (req.username() != null && users.existsByUsernameIgnoreCaseAndIdNot(req.username(), id)) {
+            throw new DomainValidationException("error.user.username_taken", "username");
+        }
+        if (req.email() != null && users.existsByEmailIgnoreCaseAndIdNot(req.email(), id)) {
+            throw new DomainValidationException("error.user.email_taken", "email");
+        }
+
         mapper.update(req, u);
         return mapper.toUserResponse(u);
     }

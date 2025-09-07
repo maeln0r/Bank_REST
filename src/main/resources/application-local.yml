@@ -19,11 +19,6 @@ spring:
       admin_username: ${ADMIN_USERNAME:admin}
       admin_email: ${ADMIN_EMAIL:admin@example.com}
       admin_password_hash: ${ADMIN_PASSWORD_HASH:}
-springdoc:
-  api-docs:
-    enabled: true
-  swagger-ui:
-    enabled: true
 
 server:
   port: ${APP_PORT:8080}
@@ -51,3 +46,8 @@ app:
     roundingMode: ${MONEY_ROUND_MODE:HALF_UP}
     maxAmount: ${MONEY_MAX_AMOUNT:1000000000000.00}
     maxBalance: ${MONEY_MAX_BALANCE:1000000000000.00}
+  cors:
+    allowed-origins:
+      - http://localhost:8081
+      - http://127.0.0.1:8081
+      - http://host.docker.internal:8081

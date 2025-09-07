@@ -1,6 +1,8 @@
 package com.example.bankcards.controller;
 
+import com.example.bankcards.dto.PageResponse;
 import com.example.bankcards.dto.admin.UserAdminDtos.*;
+import com.example.bankcards.dto.card.CardResponse;
 import com.example.bankcards.service.UserAdminService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -21,11 +23,12 @@ public class UserAdminController {
     private final UserAdminService service;
 
     @GetMapping
-    public ResponseEntity<Page<UserResponse>> list(
+    public ResponseEntity<PageResponse<UserResponse>> list(
             @org.springframework.data.web.PageableDefault(sort = "createdAt", direction = org.springframework.data.domain.Sort.Direction.DESC) Pageable pageable,
             @RequestParam(value = "query", required = false) String query
     ) {
-        return ResponseEntity.ok(service.list(pageable, query));
+        Page<UserResponse> page = service.list(pageable, query);
+        return ResponseEntity.ok(PageResponse.from(page));
     }
 
     @GetMapping("/{id}")

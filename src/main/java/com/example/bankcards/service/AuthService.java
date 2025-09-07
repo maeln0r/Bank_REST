@@ -35,7 +35,7 @@ public class AuthService {
     public TokenResponse login(LoginRequest req) {
         authManager.authenticate(new UsernamePasswordAuthenticationToken(req.usernameOrEmail(), req.password()));
         UserEntity u = users.findByUsernameIgnoreCase(req.usernameOrEmail())
-                .or(() -> users.findByEmailIgnoreCase(req.usernameOrEmail().toLowerCase(Locale.ROOT)))
+                .or(() -> users.findByEmailIgnoreCase(req.usernameOrEmail()))
                 .orElseThrow();
         return issueTokens(u);
     }

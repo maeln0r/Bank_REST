@@ -6,3 +6,11 @@ springdoc:
     enabled: false
   swagger-ui:
     enabled: false
+app:
+  cors:
+    paths: ["/**"]
+    allowed-methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+    allowed-headers: [Authorization, Content-Type, Accept-Language, X-Request-Id]
+    exposed-headers: [X-Request-Id, Content-Disposition]
+    allow-credentials: true
+    max-age: 3600

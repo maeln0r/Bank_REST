@@ -18,4 +18,8 @@ public interface JpaUserRepository extends JpaRepository<UserEntity, UUID>, JpaS
     boolean existsByUsernameIgnoreCase(String username);
 
     boolean existsByEmailIgnoreCase(String email);
+
+    boolean existsByUsernameIgnoreCaseAndIdNot(String username, UUID id);
+
+    boolean existsByEmailIgnoreCaseAndIdNot(String email, UUID id);
 }
