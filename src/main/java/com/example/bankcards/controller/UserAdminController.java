@@ -1,8 +1,10 @@
 package com.example.bankcards.controller;
 
 import com.example.bankcards.dto.PageResponse;
-import com.example.bankcards.dto.admin.UserAdminDtos.*;
-import com.example.bankcards.dto.card.CardResponse;
+import com.example.bankcards.dto.admin.UserAdminDtos.AdminChangePasswordRequest;
+import com.example.bankcards.dto.admin.UserAdminDtos.CreateUserRequest;
+import com.example.bankcards.dto.admin.UserAdminDtos.UpdateUserRequest;
+import com.example.bankcards.dto.admin.UserAdminDtos.UserResponse;
 import com.example.bankcards.service.UserAdminService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

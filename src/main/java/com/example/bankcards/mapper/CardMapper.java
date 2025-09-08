@@ -5,7 +5,8 @@ import com.example.bankcards.dto.card.CardCreateRequest;
 import com.example.bankcards.dto.card.CardResponse;
 import com.example.bankcards.entity.CardEntity;
 import com.example.bankcards.mapper.common.CommonMappers;
-import org.mapstruct.*;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
 @Mapper(config = MapStructConfig.class, uses = CommonMappers.class)
 public interface CardMapper {

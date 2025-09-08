@@ -1,6 +1,7 @@
 package com.example.bankcards.controller;
 
-import com.example.bankcards.dto.user.UserSelfDtos.*;
+import com.example.bankcards.dto.user.UserSelfDtos.MeResponse;
+import com.example.bankcards.dto.user.UserSelfDtos.UserChangePasswordRequest;
 import com.example.bankcards.service.UserSelfService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
