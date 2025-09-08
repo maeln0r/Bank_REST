@@ -1,0 +1,21 @@
+spring:
+  jpa:
+    properties:
+      hibernate:
+        format_sql: true
+  liquibase:
+    enabled: true
+
+app:
+  jwt:
+    # Base64-encoded 256-bit key (test-only)
+    secret-base64: Tv2wDOQFvf2b5/Fs1qnE53xO+qW1lXMcE8GZCEX/K7M=
+    access-minutes: 30
+    refresh-days: 30
+  cards:
+    pan-hmac-secret: test-secret
+  money:
+    scale: 2
+    roundingMode: HALF_UP
+    maxAmount: 1000000.00
+    maxBalance: 1000000.00
